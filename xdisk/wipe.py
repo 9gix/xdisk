@@ -56,7 +56,7 @@ class Wiper:
 
     def random(self, verify=False):
         randomWorker = RandomWorker(self.sectorSize, self.chunks)
-        def writeValue():
+        def writeRandom():
             randomWorker.start()
             for sector in range(0, self.totalSector - self.leftover, self.chunks):
                 buff = randomWorker.qBuffer.get()
@@ -65,16 +65,16 @@ class Wiper:
             buff = numpy.random.bytes(512* self.leftover)
             self.f.write(buff)
             if verify: self.compareSectorData(sector,buff)
-        return writeValue
+        return writeRandom
 
     def fill(self, value=b'\x00', verify=False):
         def writeValue():
             buff = (value*self.chunks*self.sectorSize)[:self.chunks*self.sectorSize]
             for sector in range(0, self.totalSector - self.leftover, self.chunks ):
-                self.f.write(buff)
+                self.f.write(buff.encode('latin1'))
                 if verify: self.compareSectorData(sector,buff)
             buff = (value*self.leftover*self.sectorSize)[:self.leftover*self.sectorSize]
-            self.f.write(buff)
+            self.f.write(buff.encode('latin1'))
             if verify: self.compareSectorData(sector,buff)
         return writeValue
 
