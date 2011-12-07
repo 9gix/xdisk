@@ -16,6 +16,7 @@ import wmi, win32file, win32con, win32api, winioctlcon
 platform = sys.platform
 
 class Disk:
+    """Attribute will be filled only from Disk Enumerator class"""
     def __init__(self, deviceId):
         self.deviceId = deviceId
 
