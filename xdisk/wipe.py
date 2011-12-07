@@ -12,7 +12,7 @@
 
 import os, numpy, threading
 from Queue import Queue
-from disk import Disk
+
 
 
 class RandomWorker(threading.Thread):
@@ -42,6 +42,18 @@ class Wiper:
                 self.f.seek(0, os.SEEK_SET)
                 pattern()
 
+    def compareSectorData(self, sector, value):
+        """match value with the sector given. return True if the same"""
+        size = len(value)
+        self.f.seek(-size,os.SEEK_CUR)
+        buff = self.f.read(size)
+        if (value == buff):
+            return True
+        else:
+            print "VERIFY FAIL BETWEEN SECTOR %s TO %s" %(sector, sector + self.chunks)
+            return False
+
+
     def random(self, verify=False):
         randomWorker = RandomWorker(self.sectorSize, self.chunks)
         def writeValue():
@@ -49,44 +61,30 @@ class Wiper:
             for sector in range(0, self.totalSector - self.leftover, self.chunks):
                 buff = randomWorker.qBuffer.get()
                 self.f.write(buff)
-                if verify:
-                    self.f.seek(-512*self.chunks,os.SEEK_CUR)
-                    if self.f.read(512*self.chunks) != buff:
-                        print "VERIFY FAIL BETWEEN SECTOR %s TO %s" %(sector, sector + chunks)
+                if verify: self.compareSectorData(sector,buff)
             buff = numpy.random.bytes(512* self.leftover)
             self.f.write(buff)
-        return writeValue
-
-    def _random(self, verify=False):
-        def writeValue():
-            for sector in range(0, self.totalSector - self.leftover, self.chunks):
-                buff = numpy.random.bytes(512 * self.chunks)
-                self.f.write(buff)
-                if verify:
-                    self.f.seek(-512*self.chunks,os.SEEK_CUR)
-                    if self.f.read(512*self.chunks) != buff:
-                        print "VERIFY FAIL BETWEEN SECTOR %s TO %s" %(sector, sector + chunks)
-            self.f.write(numpy.random.bytes(512* self.leftover))
-        return writeValue
-
-    def _fill(self, value=b'\x00', verify=False):
-        def writeValue():
-            buff = (value*self.chunks*self.sectorSize)[:self.chunks*self.sectorSize]
-            for sector in range(0, self.totalSector - self.leftover, self.chunks ):
-                self.f.write(buff)
-            buff = (value*self.leftover*self.sectorSize)[:self.leftover*self.sectorSize]
-            self.f.write(buff)
+            if verify: self.compareSectorData(sector,buff)
         return writeValue
 
     def fill(self, value=b'\x00', verify=False):
         def writeValue():
+            buff = (value*self.chunks*self.sectorSize)[:self.chunks*self.sectorSize]
             for sector in range(0, self.totalSector - self.leftover, self.chunks ):
-                self.f.write((value*self.chunks*self.sectorSize)[:self.chunks*self.sectorSize])
-            self.f.write((value*self.leftover*self.sectorSize)[:self.leftover*self.sectorSize])
+                self.f.write(buff)
+                if verify: self.compareSectorData(sector,buff)
+            buff = (value*self.leftover*self.sectorSize)[:self.leftover*self.sectorSize]
+            self.f.write(buff)
+            if verify: self.compareSectorData(sector,buff)
         return writeValue
 
 def main():
+    from disk import Disk
+
     disk = Disk("\\\\.\\PhysicalDrive1")
+    wiper = Wiper(disk)
+    pattern = [wiper.random(),wiper.fill(), wiper.random(True),wiper.fill(b'\xFF',True)]
+    wiper.wipe(pattern)
     #disk.unmount()
     #wiper = WiperAlgorithm(disk)
 
@@ -99,5 +97,5 @@ def performance_test():
     #print t.timeit(1)
 
 if __name__ == "__main__":
-    #main()
-    performance_test()
+    main()
+    #performance_test()
