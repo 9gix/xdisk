@@ -1,12 +1,12 @@
 #-------------------------------------------------------------------------------
-# Name:        module1
+# Name:        disk
 # Purpose:
 #
-# Author:      91315
+# Author:      Eugene
 #
 # Created:     06/12/2011
-# Copyright:   (c) 91315 2011
-# Licence:     <your licence>
+# Copyright:   (c) Eugene 2011
+# Licence:     -
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
@@ -19,11 +19,8 @@ class Disk:
     def __init__(self, deviceId):
         self.deviceId = deviceId
 
-        # Enumerate Disk Information Based on Its Operating System
-        {'win32': self.enumWin32,
-         'linux2': self.enumLinux,
-         'darwin': self.enumOSX,
-        }.get(platform, self.enumUnknown)()
+    def __str__(self):
+        return self.deviceId
 
     def unmount(self):
         {'win32': self.unmountWin32,
@@ -31,23 +28,6 @@ class Disk:
          'darwin': self.unmountOSX,
         }.get(platform, self.unmountUnknown)()
 
-    def enumWin32(self):
-        """Enumeration for Win32"""
-        wql = "SELECT * FROM Win32_DiskDrive WHERE DeviceID = '%s'"%self.deviceId
-        c = wmi.WMI()
-        for disk in c.query(wql):
-            self.model = disk.Model
-            self.serial = disk.SerialNumber
-            self.firmwareRevision = disk.FirmwareRevision
-            self.interfaceType = disk.InterfaceType
-            self.totalCylinders = disk.TotalCylinders
-            self.totalHead = disk.TotalHeads
-            self.sector = disk.SectorsPerTrack
-            self.bytesPerSector = disk.BytesPerSector
-            self.mediaType = disk.MediaType
-            for partition in disk.associators ("Win32_DiskDriveToDiskPartition"):
-                self.totalSector = int(partition.NumberOfBlocks)
-                self.size = partition.Size
 
     def unmountWin32(self):
         """Unmount for Win32"""
@@ -65,26 +45,81 @@ class Disk:
             return False
         return True
 
-    def enumLinux(self):
-        """Enumeration for Linux"""
-        pass
-
     def unmountLinux(self):
         """Unmount for Linux"""
-        pass
-
-    def enumOSX(self):
-        """Enumeration for OSX"""
         pass
 
     def unmountOSX(self):
         """Unmount for OSX"""
         pass
 
+    def unmountUnknown(self):
+        """Unmount for Linux"""
+        pass
+
+
+class DiskEnumerator:
+    def __init__(self):
+        self.diskDict = {}
+        {'win32': self.enumWin32,
+         'linux2': self.enumLinux,
+         'darwin': self.enumOSX,
+        }.get(platform, self.enumUnknown)()
+
+    def __getitem__(self, deviceId):
+        """return disk object given its device id"""
+        return self.diskDict.get(deviceId)
+
+    def __len__(self):
+        return len(self.diskDict)
+
+    def __iter__(self):
+        self.keys = sorted(self.diskDict.keys())
+        self.index = 0
+        return self
+
+    def next(self):
+        if self.index >= len(self.keys):
+            raise StopIteration
+        self.index = self.index + 1
+        return self.diskDict[self.keys[self.index-1]]
+
+    def enumWin32(self):
+        """Enumeration for Win32"""
+        wql = "SELECT * FROM Win32_DiskDrive"
+        c = wmi.WMI()
+        for disk_drive in c.query(wql):
+            disk = Disk(disk_drive.DeviceId)
+            disk.model = disk_drive.Model
+            disk.serial = disk_drive.SerialNumber
+            disk.firmwareRevision = disk_drive.FirmwareRevision
+            disk.interfaceType = disk_drive.InterfaceType
+            disk.totalCylinders = disk_drive.TotalCylinders
+            disk.totalHead = disk_drive.TotalHeads
+            disk.sector = disk_drive.SectorsPerTrack
+            disk.bytesPerSector = disk_drive.BytesPerSector
+            disk.mediaType = disk_drive.MediaType
+            for partition in disk_drive.associators ("Win32_DiskDriveToDiskPartition"):
+                disk.totalSector = int(partition.NumberOfBlocks)
+                disk.size = partition.Size
+            self.diskDict[disk_drive.DeviceId] = disk
+
+    def enumLinux(self):
+        """Enumeration for Linux"""
+        pass
+
+    def enumOSX(self):
+        """Enumeration for OSX"""
+        pass
+
     def enumUnknown(self):
         """Enumeration for Linux"""
         pass
 
-    def unmountUnknown(self):
-        """Unmount for Linux"""
-        pass
+def main():
+    diskDict = DiskEnumerator()
+    for disk in diskDict:
+        print disk.model
+
+if __name__ == "__main__":
+    main()
