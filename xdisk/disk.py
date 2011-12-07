@@ -66,6 +66,9 @@ class DiskEnumerator:
          'darwin': self.enumOSX,
         }.get(platform, self.enumUnknown)()
 
+    def __str__(self):
+        return str(self.diskDict.keys())
+
     def __getitem__(self, deviceId):
         """return disk object given its device id"""
         return self.diskDict.get(deviceId)
