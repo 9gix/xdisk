@@ -20,14 +20,30 @@ class Model:
     def enumDisk(self):
         self.diskList = DiskEnumerator()
 
+    def enumAlgorithm(self):
+        self.algorithmList = []
+
+    def craftAlgorithm(self,name,description,*methodList):
+        pass
+
+    def wipeDisk(self,diskList,method):
+        for disk in diskList:
+            wiper = WiperAlgorithm(disk)
+
+
 #-------------------------------------------------------------------------------
 import Tkinter
 import tkFont
 
+class AlgorithmView(Tkinter.Toplevel):
+    def __init__(self):
+        Tkinter.Toplevel.__init__(self)
+
+
 class View(Tkinter.Tk):
     def __init__(self):
         Tkinter.Tk.__init__(self)
-        self.geometry("600x400")
+        self.geometry("640x480")
         monospace = tkFont.Font(family='Courier',size=9)
 
         self.diskList = Tkinter.Listbox(self,selectmode=Tkinter.EXTENDED)
@@ -36,7 +52,7 @@ class View(Tkinter.Tk):
         self.detectBtn.grid(row=1,column=0,sticky=Tkinter.NSEW)
         self.diskInfo = Tkinter.Listbox(self,font=monospace)
         self.diskInfo.grid(row=0,column=1,rowspan=2,sticky=Tkinter.NSEW)
-        self.wipeBtn = Tkinter.Button(self,text='Detect')
+        self.wipeBtn = Tkinter.Button(self,text='Wipe')
         self.wipeBtn.grid(row=2,column=1,sticky=Tkinter.NSEW)
 
         self.rowconfigure(0,weight=1)
@@ -51,7 +67,9 @@ class Controller:
         self.model = Model()
         self.view = View()
         self.view.detectBtn.config(command=self.detectDisk)
+        self.view.wipeBtn.config(command=self.wipeDisk)
         self.view.diskList.bind("<<ListboxSelect>>", self.diskListSelected)
+
         self.view.mainloop()
 
     def detectDisk(self):
@@ -78,6 +96,10 @@ class Controller:
             for k,v in disk.__dict__.iteritems():
                 self.view.diskInfo.insert(Tkinter.END, body(k,v))
             self.view.diskInfo.insert(Tkinter.END,"")
+
+    def wipeDisk(self):
+        self.model.wipeDisk(self.diskSelected, None)
+
 
 
 
