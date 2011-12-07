@@ -11,10 +11,60 @@
 #!/usr/bin/env python
 
 from wipe import Wiper
+import json
 
 class WiperAlgorithm(Wiper):
-    def __init__(self,disk):
+    def __init__(self,disk,algo_json='algo.json'):
         Wiper.__init__(self,disk)
+        self.algo_json = algo_json
+
+        self.loadAlgo()
+
+    def loadAlgo(self):
+
+        with open(self.algo_json,'r') as f:
+            try:
+                js = json.load(f)
+            except ValueError:
+                js = []
+        self.algorithmList = []
+        for algoDict in js:
+            algorithm = {}
+            algorithm['name'] = algoDict.get('name')
+            algorithm['description'] = algoDict.get('description')
+            methodList = []
+            for method in algoDict['passes']:
+                verify = method.get('verify',False)
+                if method.get('fill'):
+                    value = method.get('fill',b'\x00')
+                    methodList.append(self.fill(value,verify))
+                elif method.get('random'):
+                    methodList.append(self.random(verify))
+            algorithm['methods'] = methodList
+            self.algorithmList.append(algorithm)
+
+    def saveAlgo(self,algorithm='My Algorithm',description=None,*method):
+        """Save Algorithm as JSON
+
+        method only accept dictionary.
+        method key such as:
+            random ==> bool
+            fill ==> byte or str
+            pass ==> int
+            verify ==> bool
+        """
+        with open(self.algo_json,'r') as f:
+            try:
+                js = json.load(f)
+            except ValueError:
+                js = []
+        algorithmDict = {
+            'name':algorithm,
+            'description':description,
+            'passes':method}
+        js.append(algorithmDict)
+        with open(self.algo_json,'w') as f:
+            f.write(json.dumps(js,encoding='latin1',indent=4,sort_keys=True))
 
     def wipePTG(self):
         self.ptg = [
@@ -45,13 +95,39 @@ class WiperAlgorithm(Wiper):
         self.fill(),self.fill(),self.fill(),]
         self.wipe(rnd)
 
+def algo2json(wiper):
+    ptg = ("Peter Gutmann",None,
+        {'random':True},{'random':True},{'random':True},{'random':True},
+        {'fill':b'\x55'},{'fill':b'\xAA'},
+        {'fill':b'\x92\x49\x24'},{'fill':b'\x49\x24\x92'},{'fill':b'\x24\x92\x49'},
+        {'fill':b'\x00'},{'fill':b'\x11'},
+        {'fill':b'\x22'},{'fill':b'\x33'},
+        {'fill':b'\x44'},{'fill':b'\x55'},
+        {'fill':b'\x66'},{'fill':b'\x77'},
+        {'fill':b'\x88'},{'fill':b'\x99'},
+        {'fill':b'\xAA'},{'fill':b'\xBB'},
+        {'fill':b'\xCC'},{'fill':b'\xDD'},
+        {'fill':b'\xEE'},{'fill':b'\xFF'},
+        {'fill':b'\x92\x49\x24'},{'fill':b'\x49\x24\x92'},{'fill':b'\x24\x92\x49'},
+        {'fill':b'\x6d\xb6\xdb'},{'fill':b'\xb6\xdb\x6d'},{'fill':b'\xdb\x6d\xb6'},
+        {'random':True},{'random':True},{'random':True},{'random':True},
+        )
+
+    algo = ptg
+    wiper.saveAlgo(*algo)
+
 def main():
-    from disk import Disk
-    disk = Disk("\\\\.\\PhysicalDrive1")
+    from disk import Disk, DiskEnumerator
+
+    diskList = DiskEnumerator()
+    disk = diskList['\\\\.\\PHYSICALDRIVE1']
+
     #disk.unmount()
     wiper = WiperAlgorithm(disk)
+    #algo2json(wiper)
 
-    wiper.wipePTG()
+    wiper.wipe(wiper.algorithmList[0]['methods'])
+    #wiper.wipePTG()
     #wiper.wipeCustom()
 
 def performance_test():
@@ -60,5 +136,5 @@ def performance_test():
     #print t.timeit(1)
 
 if __name__ == "__main__":
-    #main()
-    performance_test()
+    main()
+    #performance_test()
