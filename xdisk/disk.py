@@ -89,25 +89,40 @@ class DiskEnumerator:
         return self.diskDict[self.keys[self.index-1]]
 
     def enumWin32(self):
-        """Enumeration for Win32"""
         wql = "SELECT * FROM Win32_DiskDrive"
         c = wmi.WMI()
-        for disk_drive in c.query(wql):
-            disk = Disk(disk_drive.DeviceId)
-            disk.model = disk_drive.Model
-            disk.serial = disk_drive.SerialNumber
-            disk.firmwareRevision = disk_drive.FirmwareRevision
-            disk.interfaceType = disk_drive.InterfaceType
-            disk.totalCylinders = disk_drive.TotalCylinders
-            disk.totalHead = disk_drive.TotalHeads
-            disk.sector = disk_drive.SectorsPerTrack
-            disk.bytesPerSector = disk_drive.BytesPerSector
-            disk.mediaType = disk_drive.MediaType
-            for partition in disk_drive.associators ("Win32_DiskDriveToDiskPartition"):
-                disk.totalSector = int(partition.NumberOfBlocks)
-                disk.size = partition.Size
-            self.diskDict[disk_drive.DeviceId] = disk
+        win32DiskDriveDict = {}
 
+        # Win32_DiskDrive Instance
+        for diskDrive in c.query(wql):
+            diskDriveDict = {}
+            diskDriveDict[u"DiskPartition"] = []
+            win32DiskDriveDict[diskDrive.DeviceID] = diskDriveDict
+
+            # Win32_DiskDrive Properties
+            for propertyName in sorted(list(diskDrive.properties)):
+                diskDriveDict[propertyName] = getattr(diskDrive, propertyName,'')
+
+            # Win32_DiskPartition Instance
+            for diskPartition in sorted(list(diskDrive.associators("Win32_DiskDriveToDiskPartition"))):
+                diskPartitionDict = {}
+                diskPartitionDict[u"LogicalDisk"] = []
+                diskDriveDict[u"DiskPartition"].append(diskPartitionDict)
+
+                # Win32_DiskPartition Properties
+                for propertyName in sorted(list(diskPartition.properties)):
+                    diskPartitionDict[propertyName] = getattr(diskPartition, propertyName,'')
+
+                # Win32_LogicalDisk Instance
+                for logicalDisk in sorted(list(diskPartition.associators ("Win32_LogicalDiskToPartition"))):
+                    partitionDict = {}
+                    diskPartitionDict[u"LogicalDisk"].append(partitionDict)
+
+                    # Win32_LogicalDisk Properties
+                    for propertyName in sorted(list(logicalDisk.properties)):
+                        partitionDict[propertyName] = getattr(logicalDisk,propertyName,'')
+        #pprint(win32DiskDriveDict)										
+				
     def enumLinux(self):
         """Enumeration for Linux"""
         pass
