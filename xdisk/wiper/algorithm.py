@@ -10,7 +10,11 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-from wipe import Wiper
+try:
+    from .wipe import Wiper
+except ValueError:
+    from wipe import Wiper
+
 import json
 
 class WiperAlgorithm(Wiper):
@@ -130,11 +134,5 @@ def main():
     #wiper.wipePTG()
     #wiper.wipeCustom()
 
-def performance_test():
-    import timeit
-    #t = timeit.Timer('wiper.wipeCustom()','from __main__ import WiperAlgorithm, from disk import Disk; wiper = WiperAlgorithm(Disk("\\\\\.\\\PhysicalDrive1"))')
-    #print t.timeit(1)
-
 if __name__ == "__main__":
     main()
-    #performance_test()
