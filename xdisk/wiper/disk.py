@@ -68,8 +68,11 @@ class DiskEnumerator:
 
     def __getitem__(self, deviceId):
         """return disk object given its device id"""
-        return [disk for disk in self
-                if str(disk).upper() in deviceId.upper()][0]
+        try:
+            return next(disk for disk in self
+                        if str(disk).upper() == deviceId.upper())
+        except:
+            return None
 
     def __len__(self):
         return len(self.diskList)
@@ -128,7 +131,7 @@ def main():
     diskList = DiskEnumerator()
     for disk in diskList:
         print disk
-
+    print diskList["\\\\.\\physicaldrive1"]
 
 if __name__ == '__main__':
     main()
