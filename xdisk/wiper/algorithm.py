@@ -1,11 +1,11 @@
 #-------------------------------------------------------------------------------
-# Name:        module1
+# Name:        xdisk.wiper.algorithm
 # Purpose:
 #
-# Author:      91315
+# Author:      Eugene
 #
-# Created:     06/12/2011
-# Copyright:   (c) 91315 2011
+# Created:     13/12/2011
+# Copyright:   (c) Eugene 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python

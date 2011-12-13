@@ -1,25 +1,17 @@
 #-------------------------------------------------------------------------------
-# Name:        module1
+# Name:        xdisk
 # Purpose:
 #
-# Author:      91315
+# Author:      Eugene
 #
-# Created:     06/12/2011
-# Copyright:   (c) 91315 2011
+# Created:     13/12/2011
+# Copyright:   (c) Eugene 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-from algorithm import WiperAlgorithm
-from disk import Disk
-
 def main():
-    disk = Disk("\\\\.\\PhysicalDrive1")
-    #disk.unmount()
-    wiper = WiperAlgorithm(disk)
-
-    wiper.wipePTG()
-    #wiper.wipeCustom()
+    pass
 
 if __name__ == "__main__":
     main()
